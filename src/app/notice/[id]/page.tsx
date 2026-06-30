@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { db } from "@/lib/db"
+import { auth } from "@/lib/auth"
+import { FavoriteButton } from "@/components/notice/favorite-button"
 
 const levelLabels: Record<string, string> = {
   "985": "985",
@@ -33,6 +35,18 @@ export default async function NoticeDetailPage({
     notFound()
   }
 
+  // 检查是否已收藏
+  const session = await auth()
+  let isFav = false
+  if (session?.user?.id) {
+    const fav = await db.favorite.findUnique({
+      where: {
+        userId_noticeId: { userId: session.user.id, noticeId: id },
+      },
+    })
+    isFav = !!fav
+  }
+
   const typeLabel =
     notice.type === "SUMMER_CAMP" ? "夏令营" : "预推免"
 
@@ -61,6 +75,9 @@ export default async function NoticeDetailPage({
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
           {notice.schoolName}
+          <span className="ml-3">
+            <FavoriteButton noticeId={id} initialFavorited={isFav} />
+          </span>
         </h1>
         <p className="text-lg text-muted-foreground">{notice.college}</p>
       </div>
