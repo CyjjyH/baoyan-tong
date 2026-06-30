@@ -42,6 +42,5 @@ next-env.d.ts
 
 /src/generated/prisma
 
-# database
-*.db
+# database (keep journal ignored)
 *.db-journal
