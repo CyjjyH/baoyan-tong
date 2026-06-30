@@ -1,40 +1,83 @@
+import { Suspense } from "react"
 import { db } from "@/lib/db"
 import { NoticeCard } from "@/components/notice/notice-card"
+import { SearchFilter } from "@/components/search/search-filter"
 
-export default async function HomePage() {
+export const dynamic = "force-dynamic"
+
+interface HomePageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+async function NoticeList({ searchParams }: HomePageProps) {
+  const params = await searchParams
+
+  // 构建筛选条件
+  const where: Record<string, unknown> = { status: "PUBLISHED" }
+
+  // 关键词搜索
+  if (params.keyword && typeof params.keyword === "string") {
+    const kw = params.keyword.trim()
+    where.OR = [
+      { title: { contains: kw } },
+      { schoolName: { contains: kw } },
+      { college: { contains: kw } },
+      { major: { contains: kw } },
+    ]
+  }
+
+  // 通知类型
+  if (params.type && typeof params.type === "string") {
+    where.type = params.type
+  }
+
+  // 学校等级 (逗号分隔多选)
+  if (params.levels && typeof params.levels === "string") {
+    const levels = params.levels.split(",").filter(Boolean)
+    if (levels.length > 0) {
+      where.schoolLevel = { in: levels }
+    }
+  }
+
+  // 省份
+  if (params.province && typeof params.province === "string") {
+    where.province = params.province
+  }
+
   const notices = await db.notice.findMany({
-    where: { status: "PUBLISHED" },
+    where,
     orderBy: { createdAt: "desc" },
+  })
+
+  // 提取可用的省份列表（从当前结果中）
+  const allNotices = await db.notice.findMany({
+    where: { status: "PUBLISHED" },
+    select: { province: true },
+    distinct: ["province"],
+    orderBy: { province: "asc" },
   })
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       {/* 搜索英雄区 */}
-      <section className="rounded-xl bg-secondary px-6 py-12 md:py-16 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+      <section className="rounded-xl bg-secondary px-6 py-8 md:py-12">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
           找到属于你的夏令营
         </h1>
-        <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
+        <p className="text-muted-foreground text-sm md:text-base mb-6 max-w-2xl">
           汇集全国高校夏令营与预推免通知，按专业、学校、时间精准筛选
         </p>
 
-        <div className="mx-auto max-w-xl flex gap-2">
-          <input
-            type="text"
-            placeholder="搜索学校、专业或关键词..."
-            className="flex-1 h-10 rounded-md border border-border bg-white px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-shadow"
-          />
-          <button className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground h-10 px-6 text-sm font-medium hover:bg-primary/90 transition-colors shrink-0">
-            搜索
-          </button>
-        </div>
+        <Suspense fallback={<FilterSkeleton />}>
+          <SearchFilter />
+        </Suspense>
       </section>
 
       {/* 通知列表 */}
-      <section className="mt-8">
+      <section className="mt-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            最新通知
+          <h2 className="text-lg font-semibold text-foreground">
+            通知列表
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               共 {notices.length} 条
             </span>
@@ -62,10 +105,32 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-border bg-white p-12 text-center">
-            <p className="text-muted-foreground">还没有通知数据</p>
+            <p className="text-muted-foreground">
+              {params.keyword || params.type || params.levels || params.province
+                ? "没有匹配的通知，试试调整筛选条件"
+                : "还没有通知数据"}
+            </p>
           </div>
         )}
       </section>
     </div>
   )
 }
+
+function FilterSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-3">
+        <div className="flex-1 h-10 rounded-md bg-white/60 animate-pulse" />
+        <div className="w-48 h-10 rounded-md bg-white/60 animate-pulse" />
+      </div>
+      <div className="flex gap-2">
+        <div className="w-16 h-7 rounded-full bg-white/60 animate-pulse" />
+        <div className="w-16 h-7 rounded-full bg-white/60 animate-pulse" />
+        <div className="w-16 h-7 rounded-full bg-white/60 animate-pulse" />
+      </div>
+    </div>
+  )
+}
+
+export default NoticeList
