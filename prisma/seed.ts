@@ -1,6 +1,8 @@
-import { PrismaClient } from "../src/generated/prisma"
+import { PrismaClient } from "../src/generated/prisma/client"
+import { PrismaLibSql } from "@prisma/adapter-libsql"
 
-const db = new PrismaClient()
+const adapter = new PrismaLibSql({ url: process.env.DATABASE_URL! })
+const db = new PrismaClient({ adapter })
 
 async function main() {
   // 先清空旧数据

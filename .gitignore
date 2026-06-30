@@ -44,3 +44,6 @@ next-env.d.ts
 
 # database (keep journal ignored)
 *.db-journal
+
+.vercel
+.env*
