@@ -34,6 +34,12 @@ export async function Header() {
           <Link href="/" className="hover:text-foreground transition-colors">
             首页
           </Link>
+          <Link
+            href="/submit"
+            className="hover:text-foreground transition-colors"
+          >
+            投稿
+          </Link>
         </nav>
 
         {/* 右侧 */}

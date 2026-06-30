@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { AdminReview } from "./review"
 
 export const dynamic = "force-dynamic"
 
@@ -19,9 +20,68 @@ export default async function AdminPage() {
     take: 20,
   })
 
+  const submissions = await db.submission.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  })
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="text-2xl font-bold text-foreground mb-6">管理后台</h1>
+
+      {/* 待审核投稿 */}
+      <section className="mb-10">
+        <h2 className="text-lg font-semibold text-foreground mb-3">
+          待审核投稿 ({submissions.length})
+        </h2>
+        {submissions.length > 0 ? (
+          <div className="space-y-3">
+            {submissions.map((sub) => (
+              <div
+                key={sub.id}
+                className="rounded-lg border border-border bg-white p-4"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-medium text-foreground text-sm">
+                      {sub.schoolName} · {sub.college}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {sub.major} ·{" "}
+                      {sub.type === "SUMMER_CAMP" ? "夏令营" : "预推免"} ·{" "}
+                      {sub.province} {sub.city}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      截止：{new Date(sub.applicationEndDate).toLocaleDateString("zh-CN")}
+                    </p>
+                    {sub.originalLink && (
+                      <a
+                        href={sub.originalLink}
+                        target="_blank"
+                        rel="noopener"
+                        className="text-xs text-primary hover:underline"
+                      >
+                        查看原文 ↗
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <AdminReview
+                  id={sub.id}
+                  title={sub.title}
+                  requirements={sub.requirements}
+                  materials={sub.materials}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-border bg-white p-8 text-center">
+            <p className="text-sm text-muted-foreground">暂无待审核投稿</p>
+          </div>
+        )}
+      </section>
 
       {/* AI 搜索日志 */}
       <section className="mb-10">

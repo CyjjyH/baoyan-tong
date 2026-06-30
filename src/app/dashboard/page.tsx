@@ -29,6 +29,11 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   })
 
+  const submissions = await db.submission.findMany({
+    where: { submitterId: session.user.id },
+    orderBy: { createdAt: "desc" },
+  })
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="text-2xl font-bold text-foreground mb-1">个人中心</h1>
@@ -123,6 +128,66 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground mt-1">
               在首页设置筛选条件后，可以保存为订阅来接收邮件提醒
             </p>
+          </div>
+        )}
+      </section>
+
+      {/* 我的投稿 */}
+      <section className="mb-10">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
+          我的投稿
+          <span className="ml-2 text-sm font-normal text-muted-foreground">
+            {submissions.length} 条
+          </span>
+        </h2>
+
+        {submissions.length > 0 ? (
+          <div className="space-y-2">
+            {submissions.map((sub) => (
+              <div
+                key={sub.id}
+                className="rounded-lg border border-border bg-white p-4"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-medium text-foreground text-sm">
+                    {sub.schoolName} · {sub.college}
+                  </p>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      sub.status === "APPROVED"
+                        ? "bg-green-100 text-green-700"
+                        : sub.status === "REJECTED"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {sub.status === "APPROVED"
+                      ? "已通过"
+                      : sub.status === "REJECTED"
+                        ? "已驳回"
+                        : "审核中"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {sub.major} · {sub.type === "SUMMER_CAMP" ? "夏令营" : "预推免"}
+                </p>
+                {sub.reviewNote && (
+                  <p className="text-xs text-red-600 mt-1">
+                    审核备注：{sub.reviewNote}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-border bg-white p-8 text-center">
+            <p className="text-sm text-muted-foreground">还没有投稿</p>
+            <Link
+              href="/submit"
+              className="text-sm text-primary hover:underline mt-1 inline-block"
+            >
+              去投稿
+            </Link>
           </div>
         )}
       </section>
